@@ -23,6 +23,7 @@ schedule,state,general,session,battle:true */
 		powers: '',
 		waitHours: 24,
 		collectHours: 0,
+		idTag : 'div[id^="action_panel_"][id$="_0"]',
 		minHealth: 200, 
 		reg: /(.*?) Level: (\d+) Status: (\w+) ([\d\.]+)\/(\d+)(?: Battle Points: )?(\d+)?/g,
 		scoring : 'lomScoring',
@@ -80,7 +81,7 @@ schedule,state,general,session,battle:true */
 								fR = gb.getRecord('lom');
 								if (!fR.paths.length) {
 									con.log(2, 'LoM: My LoM land now in defend! Adding page check');
-									gb.setrPage(fR, gb.makePath(gb.lom, 'your', i));
+									loe.setrPage(fR, loe.makePath(gb.lom, 'your', i));
 									gb.setRecord(fR);
 								}
 							} else if (gb.hasRecord('lom')) {
@@ -131,7 +132,7 @@ schedule,state,general,session,battle:true */
 					
 				} else {
 					
-					$j('div[id^="special_defense_button"] form input[type="image"]').each( function() {
+					$j('div[id^="special_defense_button"] form input[type="image"], div[id^="action_panel"] form input[type="image"]').each( function() {
 						powers.addToList($j(this).attr('src').regex(/.*\/(\w+\.\w+)/));
 					});
 					
@@ -139,7 +140,7 @@ schedule,state,general,session,battle:true */
 						fR.state = 'Active';
 						session.setItem('gbWhich', fR.label);
 						battle.readWinLoss(resultsText, gb.winLoss);
-						gb.setrPage(fR, gb.makePath(gb.lom, 'your', slot), 'review', Date.now());
+						loe.setrPage(fR, loe.makePath(gb.lom, 'your', slot), 'review', Date.now());
 						gb.readTower(fR, 'your', slot, $j('#your_guild_member_list_1'), powers);
 					} else if (fR.state == 'Active') { 
 					// Add a timeout here in case wasn't in last defend, script wasn't run during protect so not deleted but now defending?
@@ -200,7 +201,7 @@ schedule,state,general,session,battle:true */
 					myLand = conquestLands.records[myIndex];
 					// If I can move, and there is an enter-able land with enough time for me to join it and get back to my land, then join.
 					if (myLand.status == 'enter' && nextLand.index !== myIndex && myLand.phaseLeft > Math.min(nextLand.phaseLeft + 24, nextLand.timeLeft) + 2) {
-						result = caap.navigate2('ajax:guildv2_conquest_command.php?tier=3,clickimg:_smallX.jpg');
+						result = caap.navigate2("ajax:guildv2_conquest_command.php?tier=3,clickjq:form[onsubmit*='guildv2_conquest_command.php'] > div[class='imgButton'] > img[src*='_smallX.jpg']");
 						stats.LoMland = result == 'done' ? -1 : stats.LoMland;
 					}
 				}

@@ -135,7 +135,7 @@ schedule,gifting,state,stats,general,session,monster,worker,guild_monster */
         try {
 			// Shrink the general box
             var name = '',
-				generalBox = $j('div[style*="hot_general_container.gif"]'),
+				generalBox = $j('div[style*="persistent_main_widget"]'),
 				loadoutsDiv = $j('#hot_swap_loadouts_div select[name="choose_loadout"] option'),
                 loadoutsList = loadoutsDiv.map(function() {
                     return this.text;
@@ -324,7 +324,7 @@ schedule,gifting,state,stats,general,session,monster,worker,guild_monster */
 				}
 
 				break;
-			case 'keep' : 
+			case 'keep' : // I think this is here as a high priority part of the finder check on keep items
 				if (!$u.hasContent($j('#equipmentItemsSection img[src*="keep_plus.jpg"][onclick*="Items"]:visible'))) {
 					state.setItem('generalKeep', false);
 					$j('#equipmentItemsSection div[id^="equipmentItems_hover_info_"]').each( function() {
@@ -390,7 +390,7 @@ schedule,gifting,state,stats,general,session,monster,worker,guild_monster */
             return false;
         }
     };
-
+	
 	worker.addAction({worker : 'general', priority : 100000, description : 'Checking current general'});
 	general.worker = function(newpage, generalBox, loadoutsDiv) {
 		try {
@@ -399,7 +399,7 @@ schedule,gifting,state,stats,general,session,monster,worker,guild_monster */
 			}
 
 			general.quickSwitch = false;
-			generalBox = $u.setContent(generalBox, $j('div[style*="hot_general_container.gif"]'));
+			generalBox = $u.setContent(generalBox, $j('div[style*="persistent_main_widget"]'));
 			loadoutsDiv = $u.setContent(loadoutsDiv, $j('#hot_swap_loadouts_div select[name="choose_loadout"] option'));
 			
 			var loadoutRecord = {},
@@ -409,7 +409,7 @@ schedule,gifting,state,stats,general,session,monster,worker,guild_monster */
 				eatk, edef,
                 temptext = '',
 				generalDiv,
-				generalName = $j('div:first > div:nth-child(2), #equippedGeneralContainer div.general_name_div3', generalBox).text().trim(),loadoutName = loadoutsDiv.filter(':selected').text().trim();
+				generalName = $j('div:first > div:first > div:nth-child(2), #equippedGeneralContainer div.general_name_div3', generalBox).text().trim(),loadoutName = loadoutsDiv.filter(':selected').text().trim();
 				
 			// Get the current general
             
@@ -460,7 +460,7 @@ schedule,gifting,state,stats,general,session,monster,worker,guild_monster */
                 return false;
             }
 
-            generalDiv = $j("#globalContainer div[style*='hot_general_container.gif'] div[style*='width:25px;']");
+            generalDiv = $j("#globalContainer div[style*='persistent_main_widget'] div[style*='width:25px;']");
             if ($u.hasContent(generalDiv) && generalDiv.length === 2) {
                 temptext = $u.setContent(generalDiv.text(), '');
                 if ($u.hasContent(temptext)) {
@@ -898,12 +898,14 @@ schedule,gifting,state,stats,general,session,monster,worker,guild_monster */
             if (timedGeneral && timedGeneral != targetGeneral && (targetGeneral != 'Use Current' || general.current != timedGeneral)) {
 				freezeTf = config.getItem('timedFreeze', true);
                 if (!returnNametf) {
-					con.log(2,'General change to ' + targetGeneral + (freezeTf ? '. Script paused' : ' ignored') + ' while equipping timed general ' + timedGeneral);
+					caap.passThrough({action:false, mlog: 'Change to ' + targetGeneral + (freezeTf ? ' paused' : ' ignored') + ' for timed general ' + timedGeneral}, 'general');
 				}
                 targetGeneral = timedGeneral;
 				resultTrue = returnNametf ? targetGeneral : true;
 				resultFalse = returnNametf ? targetGeneral : freezeTf;
-            }
+            } else {
+				caap.passThrough({action: false, mess: ''}, 'general');
+			}
 
 			if (defaultLoadout != 'Use Current' && !general.hasRecord(defaultLoadout)) {
 				// Unable to equip, but remember setting in case it was a loadouts reset
@@ -917,10 +919,7 @@ schedule,gifting,state,stats,general,session,monster,worker,guild_monster */
             // Confirm loadout is ok
 			if (stats.level > 100) {
 				
-
-				/*-------------------------------------------------------------------------------------\
-												Rebuild reset loadouts
-				\-------------------------------------------------------------------------------------*/
+				// I think this is part of the finder logic to check keep items
 				if (state.getItem('generalKeep', true) && !returnNametf) {
 					if (caap.navigateTo('keep')) {
 						return true;
@@ -932,6 +931,9 @@ schedule,gifting,state,stats,general,session,monster,worker,guild_monster */
 					return true;
 				}
 				
+				/*-------------------------------------------------------------------------------------\
+												Rebuild reset loadouts
+				\-------------------------------------------------------------------------------------*/
 				general.records.some( function(g) {
 					if (!general.isLoadout(g.name) || returnNametf) {
 						return true;
@@ -941,7 +943,7 @@ schedule,gifting,state,stats,general,session,monster,worker,guild_monster */
 						return false;
 					}
 					
-					con.log(2, 'Houston, we have a problem. Loadout ' + g.nameBeforeReset + ' appears to be reset. Attempting to rebuild');
+					con.log(2, 'Loadout ' + g.nameBeforeReset + ' appears to be reset. Attempting to rebuild');
 					if (caap.page != 'player_loadouts' || !caap.clickUrl.hasIndexOf('loadout=' + g.value)) {
 						caap.ajaxLink('player_loadouts.php?item_id=' + general.getRecordVal(g.general, 'item', false) + '&item_category=' +
 						general.getRecordVal(g.general, 'itype', false) + '&action=select_loadout_general&selection=1&loadout=' + g.value);
@@ -957,7 +959,12 @@ schedule,gifting,state,stats,general,session,monster,worker,guild_monster */
 					}
 					if (text.match(/EQUIPMENT ATK: 0 DEF: 0/)) {
 						// player_loadouts.php?selection=3&loadout=1&action=select_loadout_class_item_equipment&item_500=1_1511&item_600=1_1509&item_700=1_1508&item_800=1_1193&item_900=1_1247&item_1000=1_1150&item_1100=1_1248&item_1200=1_1249
-						caap.ajaxLink('player_loadouts.php?selection=3&action=select_loadout_class_item_equipment&' + g.items + 'loadout=' + g.value);
+						text = g.items;
+						['5', '6', '7', '8', '9', '10', '11', '12', '13'].forEach( function(n) {
+							text = text + (text.hasIndexOf('item_' + n + '00=') ? '' : 'item_' + n + '00=unset&');
+						});
+						caap.ajaxLink('player_loadouts.php?selection=3&action=select_loadout_class_item_equipment&' + text +
+							'loadout=' + g.value);
 						click = true;
 						return true;
 					}
@@ -1025,7 +1032,6 @@ schedule,gifting,state,stats,general,session,monster,worker,guild_monster */
 				return resultFalse;
 			}
 			
-            caap.waitMilliSecs = caap.waitTime;
             window.location.href = caap.jss + ":void(doHotSwapGeneral('" + gR.item + "', '" + gR.itype + "', false))";
 			return resultTrue;
         } catch (err) {
